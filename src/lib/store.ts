@@ -608,6 +608,145 @@ export async function recordPayment(invoiceId: number, amount: number, method: n
   return inv;
 }
 
+export async function saveInvoice(input: Partial<Invoice>): Promise<Invoice> {
+  let inv = input.invoice_id ? memoryInvoices.find(x => x.invoice_id === input.invoice_id) : null;
+
+  if (!inv) {
+    const newId = memoryInvoices.length > 0 ? Math.max(...memoryInvoices.map(x => x.invoice_id)) + 1 : 1;
+    inv = {
+      invoice_id: newId,
+      invoice_code: input.invoice_code || `HD${input.billing_year || 2026}${String(input.billing_month || 10).padStart(2, '0')}-${input.room_number || '101'}`,
+      contract_id: input.contract_id || 1,
+      contract_code: input.contract_code || 'HD-DEFAULT',
+      building_id: input.building_id || 1,
+      building_name: input.building_name || 'NHÀ TRỌ CÔ NÚI',
+      room_id: input.room_id || 1,
+      room_number: input.room_number || '101',
+      tenant_id: input.tenant_id || 1,
+      tenant_name: input.tenant_name || 'Khách thuê',
+      tenant_phone: input.tenant_phone || '0903123456',
+      tenant_email: input.tenant_email || '',
+      reading_id: input.reading_id,
+      billing_month: input.billing_month || 10,
+      billing_year: input.billing_year || 2026,
+      issue_date: input.issue_date || new Date().toISOString().slice(0, 10),
+      due_date: input.due_date || new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10),
+      room_amount: 0,
+      electric_amount: 0,
+      water_amount: 0,
+      service_amount: 0,
+      other_amount: 0,
+      discount_amount: 0,
+      total_amount: 0,
+      paid_amount: input.paid_amount || 0,
+      remaining_amount: 0,
+      status: 0,
+      status_text: 'Chờ thanh toán',
+      bank_bin: input.bank_bin || '970436',
+      bank_name: input.bank_name || 'Vietcombank',
+      bank_account_no: input.bank_account_no || '0501000080131',
+      bank_account_name: input.bank_account_name || 'TRAN THI MY HANH',
+      notes: input.notes || '',
+      details: []
+    };
+    memoryInvoices.unshift(inv);
+  }
+
+  // Update header fields
+  if (input.issue_date) inv.issue_date = input.issue_date;
+  if (input.due_date) inv.due_date = input.due_date;
+  if (input.notes !== undefined) inv.notes = input.notes;
+  if (input.billing_month) inv.billing_month = input.billing_month;
+  if (input.billing_year) inv.billing_year = input.billing_year;
+  if (input.room_number) inv.room_number = input.room_number;
+  if (input.tenant_name) inv.tenant_name = input.tenant_name;
+  if (input.tenant_phone) inv.tenant_phone = input.tenant_phone;
+  if (input.building_name) inv.building_name = input.building_name;
+  if (input.bank_account_no) inv.bank_account_no = input.bank_account_no;
+  if (input.bank_account_name) inv.bank_account_name = input.bank_account_name;
+  if (input.bank_name) inv.bank_name = input.bank_name;
+  if (input.paid_amount !== undefined) inv.paid_amount = Number(input.paid_amount);
+
+  // Update details
+  if (Array.isArray(input.details)) {
+    inv.details = input.details.map((d, index) => {
+      const qty = Number(d.quantity) || 0;
+      let price = Number(d.unit_price) || 0;
+      const type = (d.item_type || 'SERVICE').toUpperCase();
+      // If discount, price should be negative
+      if (type === 'DISCOUNT' && price > 0) price = -price;
+      const amt = Math.round(qty * price);
+      return {
+        invoice_detail_id: d.invoice_detail_id || (index + 1),
+        invoice_id: inv!.invoice_id,
+        service_id: d.service_id,
+        item_type: type,
+        item_name: d.item_name || 'Khoản thu',
+        old_index: d.old_index !== undefined ? Number(d.old_index) : undefined,
+        new_index: d.new_index !== undefined ? Number(d.new_index) : undefined,
+        quantity: qty,
+        unit_name: d.unit_name || 'Lần',
+        unit_price: price,
+        amount: amt,
+        notes: d.notes || ''
+      };
+    });
+  }
+
+  // Recalculate subtotals
+  let roomAmt = 0;
+  let elecAmt = 0;
+  let waterAmt = 0;
+  let svcAmt = 0;
+  let discAmt = 0;
+  let otherAmt = 0;
+
+  for (const d of inv.details || []) {
+    const amt = d.amount || 0;
+    const type = (d.item_type || '').toUpperCase();
+    if (type === 'ROOM') roomAmt += amt;
+    else if (type === 'ELECTRIC') elecAmt += amt;
+    else if (type === 'WATER') waterAmt += amt;
+    else if (type === 'SERVICE') {
+      if (amt < 0) discAmt += Math.abs(amt);
+      else svcAmt += amt;
+    } else if (type === 'DISCOUNT' || amt < 0) {
+      discAmt += Math.abs(amt);
+    } else {
+      otherAmt += amt;
+    }
+  }
+
+  inv.room_amount = roomAmt;
+  inv.electric_amount = elecAmt;
+  inv.water_amount = waterAmt;
+  inv.service_amount = svcAmt;
+  inv.discount_amount = discAmt;
+  inv.other_amount = otherAmt;
+
+  const gross = roomAmt + elecAmt + waterAmt + svcAmt + otherAmt;
+  inv.total_amount = Math.max(0, gross - discAmt);
+  inv.paid_amount = Number(inv.paid_amount) || 0;
+  inv.remaining_amount = Math.max(0, inv.total_amount - inv.paid_amount);
+
+  inv.status = inv.remaining_amount === 0 ? 2 : inv.paid_amount > 0 ? 1 : 0;
+  inv.status_text = inv.status === 2 ? 'Đã thanh toán' : inv.status === 1 ? 'TT một phần' : 'Chờ thanh toán';
+
+  // Build VietQR payload
+  inv.bank_bin = inv.bank_bin || '970436';
+  inv.bank_name = inv.bank_name || 'Vietcombank';
+  inv.bank_account_no = inv.bank_account_no || '0501000080131';
+  inv.bank_account_name = inv.bank_account_name || 'TRAN THI MY HANH';
+  inv.viet_qr_content = buildVietQrPayload({
+    bankBin: inv.bank_bin,
+    accountNo: inv.bank_account_no,
+    amount: inv.remaining_amount > 0 ? inv.remaining_amount : inv.total_amount,
+    content: `P${inv.room_number} T${inv.billing_month}/${inv.billing_year}`
+  });
+
+  return inv;
+}
+
 // ========================== SERVICES ==========================
 export async function getServices(): Promise<ServiceItem[]> {
   return [...memoryServices];
