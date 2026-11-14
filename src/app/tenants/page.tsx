@@ -5,7 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import { Users, Plus, Search, Printer, Download, Eye, Edit3, Trash2, CheckCircle2, Shield, UserPlus, Phone, Home, FileText, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-interface Tenant {
+interface TenantItem {
   id: number;
   full_name: string;
   id_card: string;
@@ -24,20 +24,18 @@ interface Tenant {
   id_card_date?: string;
   id_card_place?: string;
   room_code?: string;
-  status?: string;
 }
 
 export default function TenantsPage() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [selectedTenant, setSelectedTenant] = useState<TenantItem | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCt01Modal, setShowCt01Modal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState<Partial<Tenant>>({
+  const [formData, setFormData] = useState<Partial<TenantItem>>({
     full_name: '',
     id_card: '',
     phone: '',
@@ -64,7 +62,27 @@ export default function TenantsPage() {
       const res = await fetch('/api/tenants');
       const data = await res.json();
       if (Array.isArray(data)) {
-        setTenants(data);
+        const normalized = data.map((t: any, idx: number) => ({
+          id: t.tenant_id || t.id || (idx + 1),
+          full_name: t.full_name || '',
+          id_card: t.id_card_number || t.id_card || '',
+          phone: t.phone || '',
+          email: t.email || '',
+          date_of_birth: t.date_of_birth || '1995-01-01',
+          gender: t.gender || 'Nam',
+          hometown: t.hometown || '',
+          permanent_address: t.permanent_address || '',
+          current_address: t.current_address || '123 Đường Số 5, Linh Trung, TP. Thủ Đức, TP.HCM',
+          ethnicity: t.ethnicity || 'Kinh',
+          nationality: t.nationality || 'Việt Nam',
+          religion: t.religion || 'Không',
+          job: t.occupation || t.job || '',
+          workplace: t.workplace || '',
+          id_card_date: t.id_card_issue_date || t.id_card_date || '2021-01-01',
+          id_card_place: t.id_card_issue_place || t.id_card_place || 'Cục Cảnh sát QLHC về TTXH',
+          room_code: t.current_room || t.room_code || '101',
+        }));
+        setTenants(normalized);
       }
     } catch (err) {
       console.error('Lỗi tải danh sách khách thuê:', err);
@@ -72,17 +90,19 @@ export default function TenantsPage() {
   };
 
   const filteredTenants = tenants.filter(t => {
+    const sTerm = searchTerm.toLowerCase();
     const matchSearch =
-      (t.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.id_card || '').includes(searchTerm) ||
-      (t.phone || '').includes(searchTerm) ||
-      (t.room_code || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (t.full_name || '').toLowerCase().includes(sTerm) ||
+      (t.id_card || '').includes(sTerm) ||
+      (t.phone || '').includes(sTerm) ||
+      (t.room_code || '').toLowerCase().includes(sTerm);
     return matchSearch;
   });
 
   const handleOpenAdd = () => {
     setIsEditing(false);
     setFormData({
+      id: Date.now(),
       full_name: '',
       id_card: '',
       phone: '',
@@ -93,16 +113,17 @@ export default function TenantsPage() {
       nationality: 'Việt Nam',
       religion: 'Không',
       permanent_address: '',
-      current_address: '123 Đường Số 5, P. Tân Phong, Quận 7, TP.HCM',
+      current_address: '123 Đường Số 5, Phường Linh Trung, TP. Thủ Đức, TP.HCM',
       job: '',
       workplace: '',
       id_card_date: '2021-01-01',
       id_card_place: 'Cục Cảnh sát QLHC về TTXH',
+      room_code: '101',
     });
     setShowEditModal(true);
   };
 
-  const handleOpenEdit = (tenant: Tenant) => {
+  const handleOpenEdit = (tenant: TenantItem) => {
     setIsEditing(true);
     setFormData({ ...tenant });
     setShowEditModal(true);
@@ -110,24 +131,33 @@ export default function TenantsPage() {
 
   const handleSaveTenant = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const method = isEditing ? 'PUT' : 'POST';
-      const body = isEditing ? { ...formData, id: formData.id } : formData;
-      const res = await fetch('/api/tenants', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        setShowEditModal(false);
-        fetchTenants();
-      }
-    } catch (err) {
-      console.error(err);
+    if (!formData.full_name) return;
+
+    if (isEditing) {
+      setTenants(prev => prev.map(t => t.id === formData.id ? { ...t, ...formData } as TenantItem : t));
+    } else {
+      const newItem: TenantItem = {
+        id: Date.now(),
+        full_name: formData.full_name || '',
+        id_card: formData.id_card || '',
+        phone: formData.phone || '',
+        email: formData.email || '',
+        date_of_birth: formData.date_of_birth || '1995-01-01',
+        gender: formData.gender || 'Nam',
+        permanent_address: formData.permanent_address || '',
+        current_address: formData.current_address || '',
+        job: formData.job || '',
+        room_code: formData.room_code || '101',
+        ethnicity: formData.ethnicity || 'Kinh',
+        nationality: formData.nationality || 'Việt Nam',
+        religion: formData.religion || 'Không',
+      };
+      setTenants([newItem, ...tenants]);
     }
+    setShowEditModal(false);
   };
 
-  const handleOpenCt01 = (tenant: Tenant) => {
+  const handleOpenCt01 = (tenant: TenantItem) => {
     setSelectedTenant(tenant);
     setShowCt01Modal(true);
   };
@@ -202,18 +232,18 @@ export default function TenantsPage() {
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={17} />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input
               type="text"
               placeholder="Tìm theo tên, CCCD, số điện thoại, số phòng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div className="text-xs font-medium text-slate-500">
+          <div className="text-xs font-medium text-slate-500 shrink-0">
             Tổng số: <span className="text-blue-600 font-bold text-sm">{filteredTenants.length}</span> người thuê
           </div>
         </div>
@@ -342,7 +372,7 @@ export default function TenantsPage() {
                 <div className="grid grid-cols-2 text-center mb-6">
                   <div>
                     <p className="text-xs uppercase font-semibold">BỘ CÔNG AN</p>
-                    <p className="text-xs uppercase font-bold underline">CÔNG AN PHƯỜNG TÂN PHONG, Q.7</p>
+                    <p className="text-xs uppercase font-bold underline">CÔNG AN PHƯỜNG LINH TRUNG, TP. THỦ ĐỨC</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
@@ -362,7 +392,7 @@ export default function TenantsPage() {
                 <div className="space-y-3.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="font-bold">Kính gửi:</span>
-                    <span className="border-b border-dotted border-slate-400 flex-1 font-semibold">Công an Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh</span>
+                    <span className="border-b border-dotted border-slate-400 flex-1 font-semibold">Công an Phường Linh Trung, Thành phố Thủ Đức, Thành phố Hồ Chí Minh</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
@@ -419,7 +449,7 @@ export default function TenantsPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-semibold whitespace-nowrap">10. Nơi ở hiện tại:</span>
                     <span className="border-b border-dotted border-slate-400 flex-1 font-semibold">
-                      Phòng {selectedTenant.room_code || '101'}, Tòa nhà Cô Núi, Số 123 Đường Số 5, P. Tân Phong, Quận 7, TP.HCM
+                      Phòng {selectedTenant.room_code || '101'}, Tòa nhà Cô Núi, Số 123 Đường Số 5, Phường Linh Trung, TP. Thủ Đức, TP.HCM
                     </span>
                   </div>
 
@@ -437,7 +467,7 @@ export default function TenantsPage() {
                   <div className="pt-2">
                     <div className="font-semibold mb-1">13. Nội dung đề nghị:</div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded text-slate-700 italic">
-                      Đăng ký tạm trú có thời hạn tại địa chỉ: Phòng {selectedTenant.room_code || '101'}, Nhà trọ Cô Núi, 123 Đường Số 5, P. Tân Phong, Quận 7, TP.HCM theo Hợp đồng thuê nhà.
+                      Đăng ký tạm trú có thời hạn tại địa chỉ: Phòng {selectedTenant.room_code || '101'}, Nhà trọ Cô Núi, 123 Đường Số 5, P. Linh Trung, TP. Thủ Đức, TP.HCM theo Hợp đồng thuê nhà.
                     </div>
                   </div>
 
@@ -506,10 +536,10 @@ export default function TenantsPage() {
 
         {/* Modal Thêm / Sửa khách thuê */}
         {showEditModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 animate-in fade-in zoom-in-95">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-5 sm:p-6 animate-in fade-in zoom-in-95">
               <div className="flex items-center justify-between border-b pb-3 mb-4">
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">
                   {isEditing ? 'Sửa thông tin khách thuê' : 'Thêm khách thuê mới'}
                 </h3>
                 <button
@@ -521,7 +551,7 @@ export default function TenantsPage() {
               </div>
 
               <form onSubmit={handleSaveTenant} className="space-y-4 text-xs">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Họ và tên *</label>
                     <input
@@ -545,7 +575,7 @@ export default function TenantsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Số điện thoại *</label>
                     <input
@@ -578,7 +608,7 @@ export default function TenantsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Nơi thường trú (Hộ khẩu)</label>
                     <input
@@ -624,4 +654,3 @@ export default function TenantsPage() {
     </AppLayout>
   );
 }
-

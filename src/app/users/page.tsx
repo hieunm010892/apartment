@@ -59,6 +59,30 @@ export default function UsersPage() {
     },
   ]);
 
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/users');
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const normalized: UserItem[] = data.map((u: any) => ({
+            id: u.user_id || u.id || Date.now(),
+            username: u.username || '',
+            full_name: u.full_name || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            role: u.role_name || u.role || 'Quản trị viên',
+            is_active: u.is_active ?? true,
+          }));
+          setUsers(normalized);
+        }
+      } catch (err) {
+        console.warn('Load users fallback to defaults:', err);
+      }
+    }
+    loadUsers();
+  }, []);
+
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([
     {
       id: 1,
@@ -96,6 +120,15 @@ export default function UsersPage() {
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(u => {
+    const s = (searchTerm || '').toLowerCase();
+    return (
+      (u.username || '').toLowerCase().includes(s) ||
+      (u.full_name || '').toLowerCase().includes(s) ||
+      (u.phone || '').toLowerCase().includes(s)
+    );
+  });
 
   const handleExportExcel = () => {
     if (activeTab === 'users') {
@@ -217,7 +250,7 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((u, idx) => (
+                {filteredUsers.map((u, idx) => (
                   <tr key={u.id} className="hover:bg-slate-50 transition">
                     <td className="py-3 px-3 text-center text-slate-400 font-medium">{idx + 1}</td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-900">{u.username}</td>

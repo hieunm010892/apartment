@@ -46,8 +46,23 @@ export default function BuildingsPage() {
       const res = await fetch('/api/buildings');
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        setBuildings(data);
-        setFormData(data[0]);
+        const raw = data[0];
+        const normalized: Building = {
+          id: raw.building_id || raw.id || 1,
+          name: raw.building_name || raw.name || 'NHÀ TRỌ CÔ NÚI',
+          address: raw.address || '123 Đường Số 5, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh',
+          total_floors: Number(raw.total_floors) || 4,
+          total_rooms: Number(raw.total_rooms) || 18,
+          manager_name: raw.owner_name || raw.manager_name || 'Cô Núi (Trần Thị Mỹ Hạnh)',
+          manager_phone: raw.owner_phone || raw.manager_phone || '0903 123 456',
+          bank_name: raw.bank_name || 'Vietcombank',
+          bank_account: raw.bank_account_no || raw.bank_account || '0501000080131',
+          bank_account_holder: raw.bank_account_name || raw.bank_account_holder || 'TRAN THI MY HANH',
+          bank_bin: raw.bank_bin || '970436',
+          notes: raw.notes || 'Khu trọ an ninh cao cấp, trang bị camera giám sát và khóa vân tay từng phòng',
+        };
+        setBuildings([normalized]);
+        setFormData(normalized);
       }
     } catch (err) {
       console.error(err);
@@ -56,6 +71,27 @@ export default function BuildingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await fetch('/api/buildings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: formData.id,
+          building_name: formData.name,
+          address: formData.address,
+          total_floors: formData.total_floors,
+          total_rooms: formData.total_rooms,
+          owner_name: formData.manager_name,
+          owner_phone: formData.manager_phone,
+          bank_name: formData.bank_name,
+          bank_account_no: formData.bank_account,
+          bank_account_name: formData.bank_account_holder,
+          bank_bin: formData.bank_bin || '970436',
+        }),
+      });
+    } catch (err) {
+      console.warn('Building update fallback:', err);
+    }
     setIsEditing(false);
     alert('Đã lưu thông tin Tòa nhà & Tài khoản Ngân hàng nhận tiền thành công!');
   };

@@ -37,19 +37,35 @@ export default function MaintenancePage() {
       const res = await fetch('/api/maintenance');
       const data = await res.json();
       if (Array.isArray(data)) {
-        setTickets(data);
+        const normalized: MaintenanceTicket[] = data.map((item: any) => ({
+          id: item.ticket_id || item.id || Date.now(),
+          ticket_code: item.ticket_code || 'SC-001',
+          room_code: item.room_number || item.room_code || '101',
+          title: item.title || '',
+          description: item.description || '',
+          priority: item.priority === 2 || item.priority === 3 || item.priority === 'High' ? 'High' : 'Medium',
+          status: item.status === 3 || item.status === 'Resolved' ? 'Resolved' : item.status === 0 ? 'Open' : 'InProgress',
+          assigned_to: item.assigned_user_name || item.assigned_to || item.vendor_name || 'Kỹ thuật viên',
+          material_cost: Number(item.material_cost) || 0,
+          labor_cost: Number(item.labor_cost) || 0,
+          total_cost: Number(item.total_cost) || (Number(item.material_cost) || 0) + (Number(item.labor_cost) || 0),
+          created_at: item.reported_at || item.created_at || new Date().toISOString().slice(0, 10),
+          resolved_at: item.completed_at || item.resolved_at || '',
+        }));
+        setTickets(normalized);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const filteredTickets = tickets.filter(t => {
+  const filteredTickets = (Array.isArray(tickets) ? tickets : []).filter(t => {
+    const s = (searchTerm || '').toLowerCase();
     const matchSearch =
-      t.ticket_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.room_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.assigned_to.toLowerCase().includes(searchTerm.toLowerCase());
+      (t.ticket_code || '').toLowerCase().includes(s) ||
+      (t.room_code || '').toLowerCase().includes(s) ||
+      (t.title || '').toLowerCase().includes(s) ||
+      (t.assigned_to || '').toLowerCase().includes(s);
     const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -241,11 +257,11 @@ export default function MaintenancePage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-slate-700 font-medium">{t.assigned_to}</td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-600">{t.material_cost.toLocaleString('en-US')} đ</td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-600">{t.labor_cost.toLocaleString('en-US')} đ</td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">{t.assigned_to || 'Chưa phân công'}</td>
+                    <td className="py-3 px-4 text-right font-mono text-slate-600">{(t.material_cost || 0).toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-4 text-right font-mono text-slate-600">{(t.labor_cost || 0).toLocaleString('vi-VN')} đ</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-rose-600">
-                      {t.total_cost.toLocaleString('en-US')} đ
+                      {(t.total_cost || 0).toLocaleString('vi-VN')} đ
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button

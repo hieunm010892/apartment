@@ -38,9 +38,11 @@ export default function VietQrCanvas({
   }, [payload]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(content || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleDownload = () => {
@@ -77,7 +79,7 @@ export default function VietQrCanvas({
         </div>
         <div className="flex justify-between">
           <span className="text-slate-500">Số tiền:</span>
-          <span className="font-bold text-rose-600">{amount.toLocaleString('vi-VN')} đ</span>
+          <span className="font-bold text-rose-600">{(amount || 0).toLocaleString('vi-VN')} đ</span>
         </div>
         <div className="flex justify-between items-center pt-1 border-t border-slate-200">
           <span className="text-slate-500">Nội dung:</span>

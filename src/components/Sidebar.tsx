@@ -83,11 +83,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={() => onClose && onClose()}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
-                isActive
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${isActive
                   ? 'bg-blue-600 text-white font-semibold shadow-sm'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
+                }`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
               <span className="truncate flex-1">{item.name}</span>

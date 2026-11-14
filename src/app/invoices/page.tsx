@@ -34,9 +34,10 @@ export default function InvoicesPage() {
       setLoading(true);
       const res = await fetch(`/api/invoices?month=${month}&year=${year}`);
       const data = await res.json();
-      setInvoices(data);
+      setInvoices(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Error loading invoices:', e);
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -106,29 +107,35 @@ export default function InvoicesPage() {
     XLSX.writeFile(wb, `DanhSachHoaDon_${month}_${year}.xlsx`);
   };
 
-  const filteredInvoices = invoices.filter(inv =>
-    inv.invoice_code.toLowerCase().includes(search.toLowerCase()) ||
-    inv.room_number.toLowerCase().includes(search.toLowerCase()) ||
-    inv.tenant_name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredInvoices = (Array.isArray(invoices) ? invoices : []).filter(inv => {
+    const s = (search || '').toLowerCase();
+    return (
+      (inv.invoice_code || '').toLowerCase().includes(s) ||
+      (inv.room_number || '').toLowerCase().includes(s) ||
+      (inv.tenant_name || '').toLowerCase().includes(s)
+    );
+  });
 
   // Meter text helper
   const getMeterText = (inv: Invoice) => {
-    const elec = inv.details?.find(d => d.item_type === 'ELECTRIC');
-    const water = inv.details?.find(d => d.item_type === 'WATER');
+    if (!inv) return '';
+    const details = Array.isArray(inv.details) ? inv.details : [];
+    const elec = details.find(d => d.item_type === 'ELECTRIC');
+    const water = details.find(d => d.item_type === 'WATER');
     const eText = elec
-      ? `Chỉ số Điện: Cũ ${(elec.old_index || 0).toLocaleString()} → Mới ${(elec.new_index || 0).toLocaleString()} (${elec.quantity} ${elec.unit_name || 'kWh'})`
+      ? `Chỉ số Điện: Cũ ${(elec.old_index || 0).toLocaleString('vi-VN')} → Mới ${(elec.new_index || 0).toLocaleString('vi-VN')} (${elec.quantity || 0} ${elec.unit_name || 'kWh'})`
       : 'Chỉ số Điện: Chưa ghi';
     const wText = water
-      ? `Chỉ số Nước: Cũ ${(water.old_index || 0).toLocaleString()} → Mới ${(water.new_index || 0).toLocaleString()} (${water.quantity} ${water.unit_name || 'm3'})`
+      ? `Chỉ số Nước: Cũ ${(water.old_index || 0).toLocaleString('vi-VN')} → Mới ${(water.new_index || 0).toLocaleString('vi-VN')} (${water.quantity || 0} ${water.unit_name || 'm3'})`
       : 'Chỉ số Nước: Chưa ghi';
     return `${eText}     |     ${wText}`;
   };
 
   const getGrossSubtotal = (inv: Invoice) => {
+    if (!inv) return 0;
     const raw = (inv.room_amount || 0) + (inv.electric_amount || 0) + (inv.water_amount || 0) + (inv.service_amount || 0) + (inv.other_amount || 0);
     if (raw > 0) return raw;
-    return inv.total_amount + (inv.discount_amount || 0);
+    return (inv.total_amount || 0) + (inv.discount_amount || 0);
   };
 
   return (
@@ -209,13 +216,13 @@ export default function InvoicesPage() {
                     <td className="py-3 px-3 font-bold text-[#1E3A8A]">{inv.invoice_code}</td>
                     <td className="py-3 px-3 font-semibold text-slate-900">Phòng {inv.room_number}</td>
                     <td className="py-3 px-3 text-slate-700">{inv.tenant_name}</td>
-                    <td className="py-3 px-3 text-right font-medium text-slate-600">{gross.toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-3 text-right font-medium text-slate-600">{(gross || 0).toLocaleString('vi-VN')} đ</td>
                     <td className="py-3 px-3 text-right font-medium text-emerald-700">
-                      {inv.discount_amount > 0 ? `-${inv.discount_amount.toLocaleString('vi-VN')} đ` : '-'}
+                      {(inv.discount_amount || 0) > 0 ? `-${(inv.discount_amount || 0).toLocaleString('vi-VN')} đ` : '-'}
                     </td>
-                    <td className="py-3 px-3 text-right font-bold text-slate-900">{inv.total_amount.toLocaleString('vi-VN')} đ</td>
-                    <td className="py-3 px-3 text-right font-medium text-emerald-700">{inv.paid_amount.toLocaleString('vi-VN')} đ</td>
-                    <td className="py-3 px-3 text-right font-bold text-rose-600">{inv.remaining_amount.toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-3 text-right font-bold text-slate-900">{(inv.total_amount || 0).toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-3 text-right font-medium text-emerald-700">{(inv.paid_amount || 0).toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-3 text-right font-bold text-rose-600">{(inv.remaining_amount || 0).toLocaleString('vi-VN')} đ</td>
                     <td className="py-3 px-3 text-center">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -323,11 +330,11 @@ export default function InvoicesPage() {
                       <tr key={d.invoice_detail_id || index}>
                         <td className="py-2 px-3 text-center font-medium text-slate-500">{index + 1}</td>
                         <td className="py-2 px-3 font-medium text-slate-900">{d.item_name}</td>
-                        <td className="py-2 px-3 text-right font-medium text-slate-700">{d.quantity.toLocaleString('vi-VN')}</td>
+                        <td className="py-2 px-3 text-right font-medium text-slate-700">{(d.quantity || 0).toLocaleString('vi-VN')}</td>
                         <td className="py-2 px-3 text-center text-slate-600">{d.unit_name}</td>
-                        <td className="py-2 px-3 text-right text-slate-700">{d.unit_price.toLocaleString('vi-VN')}</td>
-                        <td className={`py-2 px-3 text-right font-semibold ${d.amount < 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
-                          {d.amount.toLocaleString('vi-VN')} đ
+                        <td className="py-2 px-3 text-right text-slate-700">{(d.unit_price || 0).toLocaleString('vi-VN')}</td>
+                        <td className={`py-2 px-3 text-right font-semibold ${(d.amount || 0) < 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
+                          {(d.amount || 0).toLocaleString('vi-VN')} đ
                         </td>
                       </tr>
                     ))}
@@ -354,35 +361,35 @@ export default function InvoicesPage() {
                   <div className="text-xs text-slate-600 flex justify-between">
                     <span>Tổng cộng:</span>
                     <span className="font-semibold text-slate-800 text-sm">
-                      {getGrossSubtotal(selectedInvoice).toLocaleString('vi-VN')} VNĐ
+                      {(getGrossSubtotal(selectedInvoice) || 0).toLocaleString('vi-VN')} VNĐ
                     </span>
                   </div>
 
                   <div className="text-xs text-rose-700 flex justify-between items-baseline pt-1 border-t border-slate-200">
                     <div>
                       <span className="font-bold">Tổng cộng sau giảm trừ:</span>
-                      {selectedInvoice.discount_amount > 0 && (
+                      {(selectedInvoice.discount_amount || 0) > 0 && (
                         <p className="text-[11px] text-emerald-700 font-medium">
-                          (Giảm trừ: -{selectedInvoice.discount_amount.toLocaleString('vi-VN')} VNĐ)
+                          (Giảm trừ: -{(selectedInvoice.discount_amount || 0).toLocaleString('vi-VN')} VNĐ)
                         </p>
                       )}
                     </div>
                     <span className="text-base font-bold text-rose-700">
-                      {selectedInvoice.total_amount.toLocaleString('vi-VN')} VNĐ
+                      {(selectedInvoice.total_amount || 0).toLocaleString('vi-VN')} VNĐ
                     </span>
                   </div>
 
                   <div className="text-xs text-slate-600 flex justify-between pt-1 border-t border-slate-200">
                     <span>Đã thanh toán:</span>
                     <span className="font-medium text-slate-800 text-sm">
-                      {selectedInvoice.paid_amount.toLocaleString('vi-VN')} VNĐ
+                      {(selectedInvoice.paid_amount || 0).toLocaleString('vi-VN')} VNĐ
                     </span>
                   </div>
 
                   <div className="text-xs text-[#1E3A8A] flex justify-between items-center pt-2 border-t-2 border-slate-300">
                     <span className="font-bold text-sm">Còn lại cần thanh toán:</span>
                     <span className="text-lg font-extrabold text-[#1E3A8A]">
-                      {selectedInvoice.remaining_amount.toLocaleString('vi-VN')} VNĐ
+                      {(selectedInvoice.remaining_amount || 0).toLocaleString('vi-VN')} VNĐ
                     </span>
                   </div>
 

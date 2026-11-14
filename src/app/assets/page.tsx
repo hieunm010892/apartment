@@ -32,18 +32,32 @@ export default function AssetsPage() {
       const res = await fetch('/api/assets');
       const data = await res.json();
       if (Array.isArray(data)) {
-        setAssets(data);
+        const normalized: Asset[] = data.map((item: any) => ({
+          id: item.asset_id || item.id || Date.now(),
+          room_id: item.room_id || 1,
+          room_code: item.room_number || item.room_code || '101',
+          asset_name: item.asset_name || '',
+          serial_number: item.serial_number || '',
+          purchase_date: item.purchase_date || '2025-01-01',
+          warranty_until: item.warranty_until || '2026-12-31',
+          condition_status: item.condition_status === 3 ? 'Repair' : 'Good',
+          notes: item.notes || '',
+        }));
+        setAssets(normalized);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const filteredAssets = assets.filter(a =>
-    a.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.room_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (a.serial_number || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAssets = (Array.isArray(assets) ? assets : []).filter(a => {
+    const s = (searchTerm || '').toLowerCase();
+    return (
+      (a.asset_name || '').toLowerCase().includes(s) ||
+      (a.room_code || '').toLowerCase().includes(s) ||
+      (a.serial_number || '').toLowerCase().includes(s)
+    );
+  });
 
   const handleExportExcel = () => {
     const data = filteredAssets.map((a, idx) => ({

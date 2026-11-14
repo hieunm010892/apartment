@@ -5,27 +5,29 @@ import AppLayout from '@/components/AppLayout';
 import { Home, Plus, Search, Download, Edit3, Trash2, CheckCircle2, AlertCircle, Wrench, Layers, Tag, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-interface Room {
-  id: number;
-  building_id: number;
+interface RoomItem {
+  room_id: number;
+  building_id?: number;
   room_code: string;
-  floor: number;
-  room_type_id: number;
+  room_number: string;
+  floor_number: number;
+  area: number;
   base_price: number;
-  area_sqm: number;
   max_occupants: number;
-  current_occupants?: number;
-  status: string;
-  cleaning_status: string;
-  description?: string;
+  status: number; // 0: Trong, 1: Dat coc, 2: Dang o, 3: Bao tri
+  status_text?: string;
+  cleaning_status: number; // 0: Sach se, 1: Chua don
+  cleaning_status_text?: string;
+  tenant_name?: string;
+  tenant_phone?: string;
 }
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<RoomItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [floorFilter, setFloorFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [editingRoom, setEditingRoom] = useState<Partial<Room> | null>(null);
+  const [editingRoom, setEditingRoom] = useState<Partial<RoomItem> | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -37,30 +39,51 @@ export default function RoomsPage() {
       const res = await fetch('/api/rooms');
       const data = await res.json();
       if (Array.isArray(data)) {
-        setRooms(data);
+        const normalized = data.map((r: any, idx: number) => ({
+          room_id: r.room_id || r.id || (idx + 1),
+          building_id: r.building_id || 1,
+          room_code: r.room_code || `P${r.room_number || (100 + idx)}`,
+          room_number: r.room_number || String(r.room_code || (100 + idx)),
+          floor_number: Number(r.floor_number || r.floor || 1),
+          area: Number(r.area || r.area_sqm || 25),
+          base_price: Number(r.base_price || 3500000),
+          max_occupants: Number(r.max_occupants || 3),
+          status: typeof r.status === 'number' ? r.status : (r.status === 'Occupied' ? 2 : r.status === 'Available' ? 0 : 3),
+          status_text: r.status_text || (r.status === 2 ? 'Đang ở' : r.status === 1 ? 'Đặt cọc' : r.status === 3 ? 'Bảo trì' : 'Phòng trống'),
+          cleaning_status: typeof r.cleaning_status === 'number' ? r.cleaning_status : (r.cleaning_status === 'Clean' ? 0 : 1),
+          cleaning_status_text: r.cleaning_status_text || 'Sạch sẽ',
+          tenant_name: r.tenant_name || '',
+          tenant_phone: r.tenant_phone || '',
+        }));
+        setRooms(normalized);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Lỗi tải danh sách phòng:', err);
     }
   };
 
   const filteredRooms = rooms.filter(r => {
-    const matchSearch = r.room_code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchFloor = floorFilter === 'ALL' || r.floor === Number(floorFilter);
-    const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
+    const sTerm = searchTerm.toLowerCase();
+    const matchSearch =
+      (r.room_number || '').toLowerCase().includes(sTerm) ||
+      (r.room_code || '').toLowerCase().includes(sTerm) ||
+      (r.tenant_name || '').toLowerCase().includes(sTerm);
+
+    const matchFloor = floorFilter === 'ALL' || r.floor_number === Number(floorFilter);
+    const matchStatus = statusFilter === 'ALL' || String(r.status) === statusFilter;
     return matchSearch && matchFloor && matchStatus;
   });
 
   const handleExportExcel = () => {
     const data = filteredRooms.map((r, idx) => ({
       STT: idx + 1,
-      'Số phòng': r.room_code,
-      'Tầng': r.floor,
+      'Số phòng': r.room_number,
+      'Tầng': r.floor_number,
       'Giá thuê cơ bản (đ/tháng)': r.base_price,
-      'Diện tích (m2)': r.area_sqm,
-      'Số người tối đa': r.max_occupants,
-      'Trạng thái': r.status === 'Occupied' ? 'Đang ở' : r.status === 'Available' ? 'Trống' : 'Bảo trì',
-      'Vệ sinh': r.cleaning_status === 'Clean' ? 'Đã dọn dẹp sạch sẽ' : 'Chưa dọn dẹp',
+      'Diện tích (m2)': r.area,
+      'Sức chứa tối đa': r.max_occupants,
+      'Trạng thái': r.status_text || 'Phòng trống',
+      'Người đang ở': r.tenant_name || 'Chưa có',
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -73,8 +96,7 @@ export default function RoomsPage() {
     e.preventDefault();
     if (!editingRoom) return;
 
-    // Update in local state
-    setRooms(prev => prev.map(r => r.id === editingRoom.id ? { ...r, ...editingRoom } as Room : r));
+    setRooms(prev => prev.map(r => r.room_id === editingRoom.room_id ? { ...r, ...editingRoom } as RoomItem : r));
     setShowModal(false);
   };
 
@@ -103,13 +125,16 @@ export default function RoomsPage() {
             <button
               onClick={() => {
                 setEditingRoom({
-                  room_code: '303',
-                  floor: 3,
+                  room_id: Date.now(),
+                  room_number: '303',
+                  room_code: 'P303',
+                  floor_number: 3,
                   base_price: 4500000,
-                  area_sqm: 28,
+                  area: 28,
                   max_occupants: 3,
-                  status: 'Available',
-                  cleaning_status: 'Clean',
+                  status: 0,
+                  status_text: 'Phòng trống',
+                  cleaning_status: 0,
                 });
                 setShowModal(true);
               }}
@@ -138,35 +163,36 @@ export default function RoomsPage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {fl === 'ALL' ? 'Tất cả các tầng' : `Tầng ${fl}`}
+                {fl === 'ALL' ? 'Tất cả' : `Tầng ${fl}`}
               </button>
             ))}
 
-            <div className="h-4 w-[1px] bg-slate-300 mx-2 hidden md:block"></div>
+            <div className="h-4 w-[1px] bg-slate-300 mx-2 hidden sm:block shrink-0"></div>
 
-            {['ALL', 'Occupied', 'Available', 'Maintenance'].map((st) => (
+            {['ALL', '2', '0', '1', '3'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                   statusFilter === st
                     ? 'bg-slate-800 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {st === 'ALL' && 'Tất cả trạng thái'}
-                {st === 'Occupied' && 'Đang ở'}
-                {st === 'Available' && 'Phòng trống'}
-                {st === 'Maintenance' && 'Sửa chữa'}
+                {st === '2' && 'Đang ở'}
+                {st === '0' && 'Phòng trống'}
+                {st === '1' && 'Đặt cọc'}
+                {st === '3' && 'Bảo trì'}
               </button>
             ))}
           </div>
 
           <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={17} />
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Tìm theo mã phòng..."
+              placeholder="Tìm theo số phòng, mã..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500"
@@ -193,38 +219,42 @@ export default function RoomsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredRooms.map((r, idx) => (
-                  <tr key={r.id} className="hover:bg-slate-50 transition">
+                  <tr key={r.room_id} className="hover:bg-slate-50 transition">
                     <td className="py-3 px-3 text-center text-slate-400 font-medium">{idx + 1}</td>
                     <td className="py-3 px-4 font-bold text-slate-900 text-sm">
                       <span className="px-2.5 py-1 bg-slate-100 rounded text-xs border border-slate-200">
-                        P.{r.room_code}
+                        P.{r.room_number || r.room_code}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center font-semibold text-slate-700">Tầng {r.floor}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-slate-700">Tầng {r.floor_number}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-blue-700 text-sm">
-                      {r.base_price.toLocaleString('en-US')} đ
+                      {(r.base_price || 0).toLocaleString('vi-VN')} đ
                     </td>
-                    <td className="py-3 px-4 text-center font-mono text-slate-600">{r.area_sqm} m²</td>
+                    <td className="py-3 px-4 text-center font-mono text-slate-600">{r.area} m²</td>
                     <td className="py-3 px-4 text-center text-slate-700">
-                      <span className="font-bold text-blue-600">{r.current_occupants || 0}</span> / {r.max_occupants} người
+                      <span className="font-bold text-blue-600">{r.status === 2 ? 1 : 0}</span> / {r.max_occupants} người
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {r.status === 'Occupied' ? (
+                      {r.status === 2 ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Đang có người ở
+                          Đang ở ({r.tenant_name || 'Khách thuê'})
                         </span>
-                      ) : r.status === 'Available' ? (
+                      ) : r.status === 0 ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                           Sẵn sàng cho thuê
                         </span>
-                      ) : (
+                      ) : r.status === 1 ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                          Đang sửa chữa
+                          Đã đặt cọc
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                          Đang bảo trì
                         </span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {r.cleaning_status === 'Clean' ? (
+                      {r.cleaning_status === 0 ? (
                         <span className="text-emerald-600 font-medium text-[11px] flex items-center justify-center gap-1">
                           <CheckCircle2 size={13} /> Sạch sẽ
                         </span>
@@ -248,6 +278,13 @@ export default function RoomsPage() {
                     </td>
                   </tr>
                 ))}
+                {filteredRooms.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-slate-400">
+                      Không tìm thấy phòng phù hợp.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -255,11 +292,11 @@ export default function RoomsPage() {
 
         {/* Modal Edit Room */}
         {showModal && editingRoom && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 text-xs">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-5 sm:p-6 animate-in fade-in zoom-in-95 text-xs">
               <div className="flex items-center justify-between border-b pb-3 mb-4">
                 <h3 className="text-base font-bold text-slate-900">
-                  Cập nhật thông tin Phòng {editingRoom.room_code}
+                  Cập nhật thông tin Phòng {editingRoom.room_number || editingRoom.room_code}
                 </h3>
                 <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700">
                   <X size={18} />
@@ -269,12 +306,12 @@ export default function RoomsPage() {
               <form onSubmit={handleSaveRoom} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Mã phòng *</label>
+                    <label className="font-semibold text-slate-700 block mb-1">Số phòng *</label>
                     <input
                       type="text"
                       required
-                      value={editingRoom.room_code || ''}
-                      onChange={(e) => setEditingRoom({ ...editingRoom, room_code: e.target.value })}
+                      value={editingRoom.room_number || ''}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, room_number: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg font-bold"
                     />
                   </div>
@@ -283,8 +320,8 @@ export default function RoomsPage() {
                     <input
                       type="number"
                       required
-                      value={editingRoom.floor || 1}
-                      onChange={(e) => setEditingRoom({ ...editingRoom, floor: Number(e.target.value) })}
+                      value={editingRoom.floor_number || 1}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, floor_number: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded-lg"
                     />
                   </div>
@@ -306,8 +343,8 @@ export default function RoomsPage() {
                     <label className="font-semibold text-slate-700 block mb-1">Diện tích (m²)</label>
                     <input
                       type="number"
-                      value={editingRoom.area_sqm || 25}
-                      onChange={(e) => setEditingRoom({ ...editingRoom, area_sqm: Number(e.target.value) })}
+                      value={editingRoom.area || 25}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, area: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded-lg font-mono"
                     />
                   </div>
@@ -317,24 +354,25 @@ export default function RoomsPage() {
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Trạng thái phòng</label>
                     <select
-                      value={editingRoom.status || 'Available'}
-                      onChange={(e) => setEditingRoom({ ...editingRoom, status: e.target.value })}
+                      value={editingRoom.status ?? 0}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, status: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded-lg"
                     >
-                      <option value="Available">Trống (Sẵn sàng)</option>
-                      <option value="Occupied">Đang ở</option>
-                      <option value="Maintenance">Sửa chữa bảo trì</option>
+                      <option value={0}>Trống (Sẵn sàng)</option>
+                      <option value={2}>Đang ở</option>
+                      <option value={1}>Đặt cọc</option>
+                      <option value={3}>Sửa chữa bảo trì</option>
                     </select>
                   </div>
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Tình trạng dọn dẹp</label>
                     <select
-                      value={editingRoom.cleaning_status || 'Clean'}
-                      onChange={(e) => setEditingRoom({ ...editingRoom, cleaning_status: e.target.value })}
+                      value={editingRoom.cleaning_status ?? 0}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, cleaning_status: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded-lg"
                     >
-                      <option value="Clean">Đã dọn sạch</option>
-                      <option value="Dirty">Cần dọn dẹp</option>
+                      <option value={0}>Đã dọn sạch</option>
+                      <option value={1}>Cần dọn dẹp</option>
                     </select>
                   </div>
                 </div>
@@ -362,4 +400,3 @@ export default function RoomsPage() {
     </AppLayout>
   );
 }
-

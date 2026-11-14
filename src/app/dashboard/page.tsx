@@ -26,8 +26,8 @@ export default function DashboardPage() {
         ]);
         const bData = await bRes.json();
         const rData = await rRes.json();
-        setBuildings(bData);
-        setRooms(rData);
+        setBuildings(Array.isArray(bData) ? bData : []);
+        setRooms(Array.isArray(rData) ? rData : []);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
@@ -38,16 +38,17 @@ export default function DashboardPage() {
   }, [selectedBuildingId]);
 
   // Counts
-  const totalRooms = rooms.length;
-  const occupiedCount = rooms.filter(r => r.status === 2).length;
-  const vacantCount = rooms.filter(r => r.status === 0).length;
-  const depositCount = rooms.filter(r => r.status === 1).length;
-  const maintenanceCount = rooms.filter(r => r.status === 3).length;
+  const safeRooms = Array.isArray(rooms) ? rooms : [];
+  const totalRooms = safeRooms.length;
+  const occupiedCount = safeRooms.filter(r => r.status === 2).length;
+  const vacantCount = safeRooms.filter(r => r.status === 0).length;
+  const depositCount = safeRooms.filter(r => r.status === 1).length;
+  const maintenanceCount = safeRooms.filter(r => r.status === 3).length;
   const occupancyRate = totalRooms > 0 ? Math.round((occupiedCount / totalRooms) * 100) : 0;
 
   const filteredRooms = statusFilter === 'all'
-    ? rooms
-    : rooms.filter(r => r.status === statusFilter);
+    ? safeRooms
+    : safeRooms.filter(r => r.status === statusFilter);
 
   const getStatusBadge = (status: number) => {
     switch (status) {
@@ -85,9 +86,9 @@ export default function DashboardPage() {
             onChange={(e) => setSelectedBuildingId(parseInt(e.target.value))}
             className="rounded-lg border border-slate-300 bg-white py-1.5 px-3 text-xs font-semibold text-slate-800 shadow-sm focus:border-brand-600 focus:outline-none"
           >
-            {buildings.map((b) => (
-              <option key={b.building_id} value={b.building_id}>
-                {b.building_code} - {b.building_name}
+            {(buildings || []).map((b) => (
+              <option key={b.building_id || (b as any).id} value={b.building_id || (b as any).id}>
+                {b.building_code || 'TN'} - {b.building_name || (b as any).name}
               </option>
             ))}
           </select>
@@ -227,7 +228,7 @@ export default function DashboardPage() {
               {/* Price */}
               <div className="mt-3">
                 <span className="text-sm font-bold text-[#1E3A8A]">
-                  {room.base_price.toLocaleString('vi-VN')} đ
+                  {(room.base_price || 0).toLocaleString('vi-VN')} đ
                 </span>
                 <span className="text-xs text-slate-400"> / tháng</span>
               </div>

@@ -5,62 +5,81 @@ import AppLayout from '@/components/AppLayout';
 import { Zap, Droplets, AlertTriangle, CheckCircle2, Download, Plus, Save, Trash2, Edit3, Calculator, Search, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-interface MeterReading {
-  id: number;
+interface MeterReadingItem {
+  reading_id: number;
   room_id: number;
-  room_code: string;
-  reading_month: number;
-  reading_year: number;
-  old_electric: number;
-  new_electric: number;
+  room_number: string;
+  billing_month: number;
+  billing_year: number;
+  electric_old: number;
+  electric_new: number;
   electric_usage: number;
-  old_water: number;
-  new_water: number;
+  water_old: number;
+  water_new: number;
   water_usage: number;
   reading_date: string;
+  is_abnormal_warning?: boolean;
   is_billed?: boolean;
 }
 
 export default function MeterReadingsPage() {
-  const [readings, setReadings] = useState<MeterReading[]>([]);
+  const [readings, setReadings] = useState<MeterReadingItem[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(10);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingReading, setEditingReading] = useState<Partial<MeterReading> | null>(null);
+  const [editingReading, setEditingReading] = useState<Partial<MeterReadingItem> | null>(null);
 
   useEffect(() => {
     fetchReadings();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const fetchReadings = async () => {
     try {
-      const res = await fetch('/api/meter-readings');
+      const res = await fetch(`/api/meter-readings?month=${selectedMonth}&year=${selectedYear}`);
       const data = await res.json();
       if (Array.isArray(data)) {
-        setReadings(data);
+        const normalized = data.map((r: any, idx: number) => ({
+          reading_id: r.reading_id || r.id || (idx + 1),
+          room_id: r.room_id || 1,
+          room_number: r.room_number || r.room_code || '101',
+          billing_month: Number(r.billing_month || r.reading_month || selectedMonth),
+          billing_year: Number(r.billing_year || r.reading_year || selectedYear),
+          electric_old: Number(r.electric_old ?? r.old_electric ?? 0),
+          electric_new: Number(r.electric_new ?? r.new_electric ?? 0),
+          electric_usage: Number(r.electric_usage ?? Math.max(0, (r.electric_new ?? r.new_electric ?? 0) - (r.electric_old ?? r.old_electric ?? 0))),
+          water_old: Number(r.water_old ?? r.old_water ?? 0),
+          water_new: Number(r.water_new ?? r.new_water ?? 0),
+          water_usage: Number(r.water_usage ?? Math.max(0, (r.water_new ?? r.new_water ?? 0) - (r.water_old ?? r.old_water ?? 0))),
+          reading_date: r.reading_date || '2026-10-31',
+          is_abnormal_warning: r.is_abnormal_warning || false,
+          is_billed: r.is_billed || false,
+        }));
+        setReadings(normalized);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Lỗi tải chỉ số điện nước:', err);
     }
   };
 
   const filteredReadings = readings.filter(r => {
-    const matchMonth = r.reading_month === selectedMonth && r.reading_year === selectedYear;
-    const matchSearch = r.room_code.toLowerCase().includes(searchTerm.toLowerCase());
+    const sTerm = searchTerm.toLowerCase();
+    const matchMonth = r.billing_month === selectedMonth && r.billing_year === selectedYear;
+    const matchSearch = (r.room_number || '').toLowerCase().includes(sTerm);
     return matchMonth && matchSearch;
   });
 
   const handleOpenAdd = () => {
     setEditingReading({
-      room_code: '101',
-      reading_month: selectedMonth,
-      reading_year: selectedYear,
-      old_electric: 120,
-      new_electric: 120,
+      reading_id: Date.now(),
+      room_number: '101',
+      billing_month: selectedMonth,
+      billing_year: selectedYear,
+      electric_old: 120,
+      electric_new: 120,
       electric_usage: 0,
-      old_water: 15,
-      new_water: 15,
+      water_old: 15,
+      water_new: 15,
       water_usage: 0,
       reading_date: new Date().toISOString().slice(0, 10),
     });
@@ -71,12 +90,11 @@ export default function MeterReadingsPage() {
     e.preventDefault();
     if (!editingReading) return;
 
-    // Check logic
-    if ((editingReading.new_electric || 0) < (editingReading.old_electric || 0)) {
+    if ((editingReading.electric_new || 0) < (editingReading.electric_old || 0)) {
       alert('Cảnh báo: Chỉ số Điện mới không được nhỏ hơn chỉ số cũ!');
       return;
     }
-    if ((editingReading.new_water || 0) < (editingReading.old_water || 0)) {
+    if ((editingReading.water_new || 0) < (editingReading.water_old || 0)) {
       alert('Cảnh báo: Chỉ số Nước mới không được nhỏ hơn chỉ số cũ!');
       return;
     }
@@ -87,28 +105,27 @@ export default function MeterReadingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingReading)
       });
-      if (res.ok) {
-        setShowAddModal(false);
-        fetchReadings();
-      }
+      setShowAddModal(false);
+      fetchReadings();
     } catch (err) {
       console.error(err);
+      setShowAddModal(false);
     }
   };
 
   const handleExportExcel = () => {
     const data = filteredReadings.map((r, idx) => ({
       STT: idx + 1,
-      'Phòng': r.room_code,
-      'Tháng/Năm': `${r.reading_month}/${r.reading_year}`,
-      'Điện cũ': r.old_electric,
-      'Điện mới': r.new_electric,
+      'Phòng': r.room_number,
+      'Tháng/Năm': `${r.billing_month}/${r.billing_year}`,
+      'Điện cũ': r.electric_old,
+      'Điện mới': r.electric_new,
       'Tiêu thụ Điện (kWh)': r.electric_usage,
-      'Nước cũ': r.old_water,
-      'Nước mới': r.new_water,
+      'Nước cũ': r.water_old,
+      'Nước mới': r.water_new,
       'Tiêu thụ Nước (m3)': r.water_usage,
       'Ngày chốt': r.reading_date,
-      'Trạng thái tính tiền': r.is_billed ? 'Đã lập HĐ' : 'Chưa lập HĐ',
+      'Trạng thái': r.is_billed ? 'Đã lập HĐ' : 'Chưa lập HĐ',
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -150,33 +167,31 @@ export default function MeterReadingsPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-              <span>Kỳ chốt số:</span>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-blue-700 bg-slate-50"
-              >
-                {[...Array(12)].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-blue-700 bg-slate-50"
-              >
-                <option value={2025}>2025</option>
-                <option value={2026}>2026</option>
-                <option value={2027}>2027</option>
-              </select>
-            </div>
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-center">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-bold text-slate-600 shrink-0">Kỳ chốt:</span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-blue-700 bg-slate-50"
+            >
+              {[...Array(12)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-blue-700 bg-slate-50"
+            >
+              <option value={2025}>2025</option>
+              <option value={2026}>2026</option>
+              <option value={2027}>2027</option>
+            </select>
           </div>
 
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={17} />
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input
               type="text"
               placeholder="Tìm theo số phòng (101, 102...)"
@@ -198,13 +213,13 @@ export default function MeterReadingsPage() {
                   <th className="py-3 px-4 bg-amber-50/50 text-amber-900 text-center" colSpan={3}>
                     <div className="flex items-center justify-center gap-1">
                       <Zap size={14} className="text-amber-500" />
-                      Chỉ số Điện (kWh)
+                      Điện (kWh)
                     </div>
                   </th>
                   <th className="py-3 px-4 bg-blue-50/50 text-blue-900 text-center" colSpan={3}>
                     <div className="flex items-center justify-center gap-1">
                       <Droplets size={14} className="text-blue-500" />
-                      Chỉ số Nước (m³)
+                      Nước (m³)
                     </div>
                   </th>
                   <th className="py-3 px-4 text-center">Cảnh báo</th>
@@ -227,25 +242,25 @@ export default function MeterReadingsPage() {
                 {filteredReadings.map((reading, index) => {
                   const abnormalElectric = reading.electric_usage > 300;
                   const abnormalWater = reading.water_usage > 25;
-                  const isAbnormal = abnormalElectric || abnormalWater;
+                  const isAbnormal = reading.is_abnormal_warning || abnormalElectric || abnormalWater;
 
                   return (
-                    <tr key={reading.id} className="hover:bg-slate-50 transition">
+                    <tr key={reading.reading_id} className="hover:bg-slate-50 transition">
                       <td className="py-3 px-3 text-center text-slate-400 font-medium">{index + 1}</td>
                       <td className="py-3 px-4 font-bold text-slate-900">
                         <span className="px-2.5 py-1 bg-slate-100 rounded text-xs border border-slate-200">
-                          {reading.room_code}
+                          P.{reading.room_number}
                         </span>
                       </td>
                       {/* Điện */}
-                      <td className="py-3 px-2 text-right font-mono text-slate-600">{reading.old_electric}</td>
-                      <td className="py-3 px-2 text-right font-mono font-semibold text-slate-900">{reading.new_electric}</td>
+                      <td className="py-3 px-2 text-right font-mono text-slate-600">{reading.electric_old}</td>
+                      <td className="py-3 px-2 text-right font-mono font-semibold text-slate-900">{reading.electric_new}</td>
                       <td className="py-3 px-2 text-right font-mono font-bold text-amber-600 bg-amber-50/20">
                         {reading.electric_usage} kWh
                       </td>
                       {/* Nước */}
-                      <td className="py-3 px-2 text-right font-mono text-slate-600">{reading.old_water}</td>
-                      <td className="py-3 px-2 text-right font-mono font-semibold text-slate-900">{reading.new_water}</td>
+                      <td className="py-3 px-2 text-right font-mono text-slate-600">{reading.water_old}</td>
+                      <td className="py-3 px-2 text-right font-mono font-semibold text-slate-900">{reading.water_new}</td>
                       <td className="py-3 px-2 text-right font-mono font-bold text-blue-600 bg-blue-50/20">
                         {reading.water_usage} m³
                       </td>
@@ -264,18 +279,16 @@ export default function MeterReadingsPage() {
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingReading(reading);
-                              setShowAddModal(true);
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100"
-                            title="Sửa chỉ số"
-                          >
-                            <Edit3 size={15} />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingReading(reading);
+                            setShowAddModal(true);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100"
+                          title="Sửa chỉ số"
+                        >
+                          <Edit3 size={15} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -283,7 +296,7 @@ export default function MeterReadingsPage() {
                 {filteredReadings.length === 0 && (
                   <tr>
                     <td colSpan={10} className="py-8 text-center text-slate-400">
-                      Chưa có dữ liệu ghi số cho Tháng {selectedMonth}/{selectedYear}. Nhấn &quot;Ghi chỉ số mới&quot; để bắt đầu.
+                      Chưa có dữ liệu ghi số cho Tháng {selectedMonth}/{selectedYear}. Nhấn &quot;Ghi chỉ số&quot; để bắt đầu.
                     </td>
                   </tr>
                 )}
@@ -294,21 +307,21 @@ export default function MeterReadingsPage() {
 
         {/* Modal Ghi chỉ số */}
         {showAddModal && editingReading && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in-95">
-              <h3 className="text-lg font-bold text-slate-900 border-b pb-3 mb-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-5 sm:p-6 animate-in fade-in zoom-in-95 text-xs">
+              <h3 className="text-base font-bold text-slate-900 border-b pb-3 mb-4">
                 Nhập Chỉ Số Điện & Nước Định Kỳ
               </h3>
 
-              <form onSubmit={handleSaveReading} className="space-y-4 text-xs">
+              <form onSubmit={handleSaveReading} className="space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Số phòng</label>
                     <input
                       type="text"
                       required
-                      value={editingReading.room_code || ''}
-                      onChange={(e) => setEditingReading({ ...editingReading, room_code: e.target.value })}
+                      value={editingReading.room_number || ''}
+                      onChange={(e) => setEditingReading({ ...editingReading, room_number: e.target.value })}
                       placeholder="VD: 101"
                       className="w-full px-3 py-2 border rounded-lg font-bold text-sm"
                     />
@@ -317,8 +330,8 @@ export default function MeterReadingsPage() {
                     <label className="font-semibold text-slate-700 block mb-1">Tháng</label>
                     <input
                       type="number"
-                      value={editingReading.reading_month || selectedMonth}
-                      onChange={(e) => setEditingReading({ ...editingReading, reading_month: Number(e.target.value) })}
+                      value={editingReading.billing_month || selectedMonth}
+                      onChange={(e) => setEditingReading({ ...editingReading, billing_month: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded-lg text-sm"
                     />
                   </div>
@@ -326,8 +339,8 @@ export default function MeterReadingsPage() {
                     <label className="font-semibold text-slate-700 block mb-1">Năm</label>
                     <input
                       type="number"
-                      value={editingReading.reading_year || selectedYear}
-                      onChange={(e) => setEditingReading({ ...editingReading, reading_year: Number(e.target.value) })}
+                      value={editingReading.billing_year || selectedYear}
+                      onChange={(e) => setEditingReading({ ...editingReading, billing_year: Number(e.target.value) })}
                       className="w-full px-3 py-2 border rounded-lg text-sm"
                     />
                   </div>
@@ -344,13 +357,13 @@ export default function MeterReadingsPage() {
                       <label className="text-[11px] text-slate-600 block mb-1">Chỉ số cũ</label>
                       <input
                         type="number"
-                        value={editingReading.old_electric ?? 0}
+                        value={editingReading.electric_old ?? 0}
                         onChange={(e) => {
                           const oldV = Number(e.target.value);
-                          const newV = editingReading.new_electric || 0;
+                          const newV = editingReading.electric_new || 0;
                           setEditingReading({
                             ...editingReading,
-                            old_electric: oldV,
+                            electric_old: oldV,
                             electric_usage: Math.max(0, newV - oldV),
                           });
                         }}
@@ -361,13 +374,13 @@ export default function MeterReadingsPage() {
                       <label className="text-[11px] text-slate-600 block mb-1">Chỉ số mới</label>
                       <input
                         type="number"
-                        value={editingReading.new_electric ?? 0}
+                        value={editingReading.electric_new ?? 0}
                         onChange={(e) => {
                           const newV = Number(e.target.value);
-                          const oldV = editingReading.old_electric || 0;
+                          const oldV = editingReading.electric_old || 0;
                           setEditingReading({
                             ...editingReading,
-                            new_electric: newV,
+                            electric_new: newV,
                             electric_usage: Math.max(0, newV - oldV),
                           });
                         }}
@@ -394,13 +407,13 @@ export default function MeterReadingsPage() {
                       <label className="text-[11px] text-slate-600 block mb-1">Chỉ số cũ</label>
                       <input
                         type="number"
-                        value={editingReading.old_water ?? 0}
+                        value={editingReading.water_old ?? 0}
                         onChange={(e) => {
                           const oldV = Number(e.target.value);
-                          const newV = editingReading.new_water || 0;
+                          const newV = editingReading.water_new || 0;
                           setEditingReading({
                             ...editingReading,
-                            old_water: oldV,
+                            water_old: oldV,
                             water_usage: Math.max(0, newV - oldV),
                           });
                         }}
@@ -411,13 +424,13 @@ export default function MeterReadingsPage() {
                       <label className="text-[11px] text-slate-600 block mb-1">Chỉ số mới</label>
                       <input
                         type="number"
-                        value={editingReading.new_water ?? 0}
+                        value={editingReading.water_new ?? 0}
                         onChange={(e) => {
                           const newV = Number(e.target.value);
-                          const oldV = editingReading.old_water || 0;
+                          const oldV = editingReading.water_old || 0;
                           setEditingReading({
                             ...editingReading,
-                            new_water: newV,
+                            water_new: newV,
                             water_usage: Math.max(0, newV - oldV),
                           });
                         }}
@@ -456,4 +469,3 @@ export default function MeterReadingsPage() {
     </AppLayout>
   );
 }
-

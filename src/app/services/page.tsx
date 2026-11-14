@@ -31,17 +31,35 @@ export default function ServicesPage() {
       const res = await fetch('/api/services');
       const data = await res.json();
       if (Array.isArray(data)) {
-        setServices(data);
+        const normalized: ServiceItem[] = data.map((item: any) => ({
+          id: item.service_id || item.id || Date.now(),
+          service_code: item.service_code || '',
+          service_name: item.service_name || '',
+          unit_price: item.default_unit_price !== undefined ? Number(item.default_unit_price) : (Number(item.unit_price) || 0),
+          unit_name: item.unit_name || 'Phòng',
+          charge_type:
+            item.pricing_type === 2 ? 'Meter' :
+            item.pricing_type === 1 ? 'PerPerson' :
+            item.pricing_type === 4 ? 'Discount' :
+            item.pricing_type === 3 ? 'PerQuantity' :
+            (item.charge_type || 'Fixed'),
+          is_active: item.is_active ?? true,
+          description: item.description || '',
+        }));
+        setServices(normalized);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const filteredServices = services.filter(s =>
-    s.service_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.service_code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredServices = (Array.isArray(services) ? services : []).filter(s => {
+    const term = (searchTerm || '').toLowerCase();
+    return (
+      (s.service_name || '').toLowerCase().includes(term) ||
+      (s.service_code || '').toLowerCase().includes(term)
+    );
+  });
 
   const handleExportExcel = () => {
     const data = filteredServices.map((s, idx) => ({
@@ -159,10 +177,10 @@ export default function ServicesPage() {
                     <td className="py-3 px-4 font-mono font-bold text-blue-600">{s.service_code}</td>
                     <td className="py-3 px-4 font-semibold text-slate-900">{s.service_name}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 text-sm">
-                      {s.unit_price < 0 ? (
-                        <span className="text-emerald-600">{s.unit_price.toLocaleString('en-US')} đ</span>
+                      {(s.unit_price || 0) < 0 ? (
+                        <span className="text-emerald-600">{(s.unit_price || 0).toLocaleString('vi-VN')} đ</span>
                       ) : (
-                        <span>{s.unit_price.toLocaleString('en-US')} đ</span>
+                        <span>{(s.unit_price || 0).toLocaleString('vi-VN')} đ</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-center text-slate-600">{s.unit_name}</td>
@@ -171,7 +189,9 @@ export default function ServicesPage() {
                         {s.charge_type === 'Meter' && 'Theo chỉ số đo'}
                         {s.charge_type === 'PerPerson' && 'Theo đầu người'}
                         {s.charge_type === 'Fixed' && 'Cố định theo phòng'}
-                        {s.charge_type === 'Discount' && 'Khoản trừ ưu đãi'}
+                        {s.charge_type === 'Discount' && 'Giảm trừ'}
+                        {s.charge_type === 'PerQuantity' && 'Theo số lượng'}
+                        {!['Meter', 'PerPerson', 'Fixed', 'Discount', 'PerQuantity'].includes(s.charge_type) && (s.charge_type || 'Cố định')}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
