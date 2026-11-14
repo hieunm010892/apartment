@@ -172,5 +172,7 @@ git push -u origin main
      - Thêm biến `DATABASE_URL`: `postgres://user:password@host:port/dbname?sslmode=require`.
    - Nếu chưa cấu hình `DATABASE_URL`, hệ thống sẽ tự động chạy chế độ **Embedded Demo Mode**, cho phép người dùng trải nghiệm đầy đủ tất cả các tính năng!
 6. Nhấn nút **"Deploy"**.
-7. Quá trình build sẽ hoàn tất trong khoảng 1-2 phút. Bạn sẽ nhận được đường link website chính thức dạng: `https://apartment-management-webapp.vercel.app`.
+7. Quá trình build sẽ hoàn tất trong khoảng 1-2 phút. Website chính thức sẽ hoạt động tại các địa chỉ ngắn gọn:
+   - **`https://nhatro-conui.vercel.app`**
+   - **`https://apartment-nbc.vercel.app`**
 
