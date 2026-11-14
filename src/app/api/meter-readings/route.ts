@@ -14,3 +14,4 @@ export async function POST(request: Request) {
   const saved = await saveMeterReading(body);
   return NextResponse.json(saved);
 }
+

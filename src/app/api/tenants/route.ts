@@ -11,3 +11,4 @@ export async function POST(request: Request) {
   const saved = await saveTenant(body);
   return NextResponse.json(saved);
 }
+

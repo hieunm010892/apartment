@@ -34,3 +34,4 @@ export async function query<T = any>(text: string, params?: any[]): Promise<T[]>
     client.release();
   }
 }
+

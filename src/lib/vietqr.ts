@@ -60,3 +60,4 @@ function computeCrc16(data: string): string {
   crc &= 0xffff;
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
+

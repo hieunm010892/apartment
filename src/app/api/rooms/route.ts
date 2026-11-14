@@ -13,3 +13,4 @@ export async function POST(request: Request) {
   const saved = await saveRoom(body);
   return NextResponse.json(saved);
 }
+

@@ -8,3 +8,4 @@ export async function GET(request: Request) {
   const data = await getInvoices(m ? parseInt(m) : undefined, y ? parseInt(y) : undefined);
   return NextResponse.json(data);
 }
+

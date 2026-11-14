@@ -5,3 +5,4 @@ export async function GET() {
   const data = await getAssets();
   return NextResponse.json(data);
 }
+

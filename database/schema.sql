@@ -396,3 +396,4 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_by INT REFERENCES users(user_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+

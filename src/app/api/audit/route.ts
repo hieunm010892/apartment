@@ -5,3 +5,4 @@ export async function GET() {
   const data = await getAuditLogs();
   return NextResponse.json(data);
 }
+

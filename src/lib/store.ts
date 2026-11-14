@@ -653,3 +653,4 @@ export async function getUsers(): Promise<User[]> {
 export async function getAuditLogs(): Promise<AuditLog[]> {
   return [...memoryAuditLogs];
 }
+

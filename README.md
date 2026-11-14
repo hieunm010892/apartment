@@ -90,7 +90,7 @@ Cơ sở dữ liệu được chuẩn hóa tại thư mục `database/`:
 
 ### 2. Cài đặt các gói phụ thuộc
 ```bash
-cd D:\NBC\SourceCode\SC_ERP_GIT_Dev20_1_AI\apartment_management_webapp
+cd D:\NBC\SourceCode\SC_ERP_GIT_Dev20_1_AI\apartment
 npm install
 ```
 
@@ -135,9 +135,9 @@ npm run start
 Vercel là nền tảng điện toán đám mây tối ưu nhất cho Next.js, hỗ trợ tự động build và cấp phát SSL HTTPS miễn phí.
 
 ### Bước 1: Khởi tạo Git và Push code lên GitHub
-Mở Terminal trong thư mục `apartment_management_webapp`:
+Mở Terminal trong thư mục `apartment`:
 ```bash
-cd D:\NBC\SourceCode\SC_ERP_GIT_Dev20_1_AI\apartment_management_webapp
+cd D:\NBC\SourceCode\SC_ERP_GIT_Dev20_1_AI\apartment
 
 # 1. Khởi tạo git repository
 git init
@@ -152,7 +152,7 @@ git commit -m "feat: Initial commit Apartment Management ERP WebApp"
 git branch -M main
 
 # 5. Liên kết với repository GitHub của bạn (thay bằng URL GitHub của bạn)
-git remote add origin https://github.com/<your-username>/apartment-management-webapp.git
+git remote add origin https://github.com/<your-username>/apartment.git
 
 # 6. Đẩy code lên GitHub
 git push -u origin main
@@ -161,7 +161,7 @@ git push -u origin main
 ### Bước 2: Kết nối và Deploy trên Vercel
 1. Đăng nhập vào [Vercel](https://vercel.com) (bằng tài khoản GitHub của bạn).
 2. Nhấn nút **"Add New..."** ➔ Chọn **"Project"**.
-3. Trong danh sách repositories GitHub, tìm repository `apartment-management-webapp` và nhấn **"Import"**.
+3. Trong danh sách repositories GitHub, tìm repository `apartment` và nhấn **"Import"**.
 4. Cấu hình cấu hình dự án:
    - **Framework Preset**: `Next.js` (Vercel tự động nhận diện).
    - **Root Directory**: `./` (để mặc định).
@@ -173,3 +173,4 @@ git push -u origin main
    - Nếu chưa cấu hình `DATABASE_URL`, hệ thống sẽ tự động chạy chế độ **Embedded Demo Mode**, cho phép người dùng trải nghiệm đầy đủ tất cả các tính năng!
 6. Nhấn nút **"Deploy"**.
 7. Quá trình build sẽ hoàn tất trong khoảng 1-2 phút. Bạn sẽ nhận được đường link website chính thức dạng: `https://apartment-management-webapp.vercel.app`.
+

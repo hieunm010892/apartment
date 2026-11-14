@@ -296,3 +296,4 @@ export default function AssetsPage() {
     </AppLayout>
   );
 }
+

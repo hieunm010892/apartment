@@ -11,3 +11,4 @@ export async function POST(request: Request) {
   const saved = await saveBuilding(body);
   return NextResponse.json(saved);
 }
+

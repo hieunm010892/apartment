@@ -5,3 +5,4 @@ export async function GET() {
   const data = await getMaintenanceTickets();
   return NextResponse.json(data);
 }
+

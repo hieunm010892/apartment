@@ -198,3 +198,4 @@ SELECT setval('tenants_tenant_id_seq', (SELECT MAX(tenant_id) FROM tenants));
 SELECT setval('contracts_contract_id_seq', (SELECT MAX(contract_id) FROM contracts));
 SELECT setval('meter_readings_reading_id_seq', (SELECT MAX(reading_id) FROM meter_readings));
 SELECT setval('invoices_invoice_id_seq', (SELECT MAX(invoice_id) FROM invoices));
+
