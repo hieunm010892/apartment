@@ -131,32 +131,32 @@ export default function UsersPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <AppLayout title="Quản trị & Nhật ký Hệ thống" subtitle="Phân quyền tài khoản theo vai trò (RBAC) và theo dõi lịch sử thao tác Audit Log">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="text-blue-600" size={26} />
-              Phân quyền Người dùng & Nhật ký Thao tác Hệ thống (Audit Log)
+            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="text-blue-600 shrink-0" size={24} />
+              <span>Quản trị & Audit Log</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Quản trị tài khoản đăng nhập theo phân hệ vai trò (RBAC) và theo dõi lịch sử chỉnh sửa giá, xóa hóa đơn để chống thất thoát
+              Phân quyền tài khoản người dùng và nhật ký hệ thống
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportExcel}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-2 transition"
+              className="w-full sm:w-auto px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center justify-center gap-2 transition"
             >
-              <Download size={15} />
+              <Download size={14} />
               Xuất Excel
             </button>
           </div>
         </div>
 
         {/* Tab switcher */}
-        <div className="flex border-b border-slate-200 bg-white px-5 rounded-t-xl">
+        <div className="flex border-b border-slate-200 bg-white px-3 sm:px-5 rounded-t-xl overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('users')}
             className={`py-3.5 px-4 text-xs font-bold flex items-center gap-2 border-b-2 transition ${

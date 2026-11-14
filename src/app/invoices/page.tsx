@@ -158,14 +158,14 @@ export default function InvoicesPage() {
             </select>
           </div>
 
-          <div className="relative">
+          <div className="relative w-full sm:w-64">
             <Search className="h-4 w-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               placeholder="Tìm theo phòng, tên khách, mã HĐ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white w-64 focus:outline-none focus:border-brand-600 shadow-sm"
+              className="pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white w-full focus:outline-none focus:border-brand-600 shadow-sm"
             />
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function InvoicesPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportExcel}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
+            className="w-full sm:w-auto justify-center inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
           >
             <FileDown className="h-3.5 w-3.5" />
             Export Excel
@@ -259,50 +259,50 @@ export default function InvoicesPage() {
 
       {/* MODAL: CHI TIẾT HÓA ĐƠN & IN PHIẾU BÁO TIỀN */}
       {showPreviewModal && selectedInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl max-h-[96vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
             {/* Header Modal Bar */}
-            <div className="bg-[#1E3A8A] text-white px-6 py-4 flex items-center justify-between no-print">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider">
-                  Chi tiết Hóa đơn {selectedInvoice.invoice_code} - Phòng {selectedInvoice.room_number}
+            <div className="bg-[#1E3A8A] text-white px-4 sm:px-6 py-3.5 flex items-center justify-between no-print shrink-0">
+              <div className="overflow-hidden">
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider truncate">
+                  Chi tiết Hóa đơn {selectedInvoice.invoice_code} - P.{selectedInvoice.room_number}
                 </h3>
-                <p className="text-xs text-blue-200">Xem trước phiếu báo tiền, mã VietQR và in ấn chuẩn A4</p>
+                <p className="text-[11px] text-blue-200 truncate">Xem trước phiếu báo tiền, mã VietQR và in ấn chuẩn A4</p>
               </div>
               <button
                 onClick={() => setShowPreviewModal(false)}
-                className="text-white/80 hover:text-white p-1 rounded-lg transition-colors"
+                className="text-white/80 hover:text-white p-1 rounded-lg transition-colors shrink-0 ml-2"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Printable Content Container */}
-            <div className="p-6 space-y-4 print:p-0">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 print:p-0 print:overflow-visible">
               {/* Report Header */}
               <div className="text-center pb-2 border-b border-slate-200">
-                <h2 className="text-lg font-bold text-[#1E3A8A] uppercase">PHIẾU BÁO TIỀN PHÒNG & DỊCH VỤ</h2>
-                <p className="text-xs text-slate-500 font-medium">
-                  {selectedInvoice.building_name} | Kỳ hóa đơn: {selectedInvoice.billing_month}/{selectedInvoice.billing_year} | Mã HĐ: {selectedInvoice.invoice_code}
+                <h2 className="text-base sm:text-lg font-bold text-[#1E3A8A] uppercase">PHIẾU BÁO TIỀN PHÒNG & DỊCH VỤ</h2>
+                <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
+                  {selectedInvoice.building_name} | Kỳ: {selectedInvoice.billing_month}/{selectedInvoice.billing_year} | Mã HĐ: {selectedInvoice.invoice_code}
                 </p>
               </div>
 
               {/* Room & Tenant Meta */}
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div>
                   <span className="font-semibold">Phòng:</span> {selectedInvoice.room_number} -{' '}
                   <span className="font-semibold">Khách thuê:</span> {selectedInvoice.tenant_name} ({selectedInvoice.tenant_phone})
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <span className="font-semibold">Ngày lập:</span> {selectedInvoice.issue_date} -{' '}
                   <span className="font-semibold">Hạn đóng:</span> {selectedInvoice.due_date}
                 </div>
               </div>
 
               {/* BANNER CHỈ SỐ ĐIỆN NƯỚC (Theo yêu cầu) */}
-              <div className="flex items-center gap-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs font-bold text-[#1E3A8A]">
+              <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs font-bold text-[#1E3A8A] flex items-center gap-2">
                 <Receipt className="h-4 w-4 shrink-0 text-blue-700" />
-                <span>{getMeterText(selectedInvoice)}</span>
+                <span className="break-words leading-relaxed">{getMeterText(selectedInvoice)}</span>
               </div>
 
               {/* Grid Items Table (Without CS Cu / CS Moi as requested) */}
@@ -394,14 +394,14 @@ export default function InvoicesPage() {
             </div>
 
             {/* Modal Actions Footer */}
-            <div className="bg-slate-100 px-6 py-3 border-t border-slate-200 flex justify-between items-center no-print">
+            <div className="bg-slate-100 px-4 sm:px-6 py-3 border-t border-slate-200 flex justify-between items-center no-print shrink-0">
               <div className="flex gap-2">
                 <button
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1E3A8A] hover:bg-blue-900 text-white rounded-lg text-xs font-bold shadow transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-[#1E3A8A] hover:bg-blue-900 text-white rounded-lg text-xs font-bold shadow transition-colors"
                 >
                   <Printer className="h-4 w-4" />
-                  In Phiếu Báo Tiền (A4)
+                  <span>In Phiếu Báo Tiền (A4)</span>
                 </button>
               </div>
 

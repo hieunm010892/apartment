@@ -61,32 +61,32 @@ export default function BuildingsPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <AppLayout title="Quản lý Tòa nhà & Ngân hàng" subtitle="Cấu hình thông tin cơ sở hạ tầng, người quản lý và STK thụ hưởng VietQR">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="text-blue-600" size={26} />
-              Quản lý Tòa nhà / Khu trọ & Tài khoản Nhận tiền
+            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="text-blue-600 shrink-0" size={24} />
+              <span>Tòa nhà & Tài khoản Ngân hàng</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Cấu hình thông tin cơ sở hạ tầng, ban quản lý và số tài khoản ngân hàng thụ hưởng nhận tiền thuê phòng
+              Thông tin cơ sở, ban quản lý và tài khoản ngân hàng nhận tiền
             </p>
           </div>
           <div className="flex items-center gap-2">
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 shadow-sm transition"
+                className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center gap-2 shadow-sm transition"
               >
                 <Edit3 size={15} />
-                Chỉnh sửa thông tin
+                Chỉnh sửa
               </button>
             ) : (
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-2 shadow-sm transition"
+                className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center justify-center gap-2 shadow-sm transition"
               >
                 <Save size={15} />
                 Lưu thay đổi

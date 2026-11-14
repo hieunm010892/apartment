@@ -1,11 +1,12 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Building, Home, Users, FileText,
   Gauge, Receipt, Wallet, Wrench, Shield, LogOut,
-  Layers, Package, CheckCircle2
+  Layers, Package, CheckCircle2, X
 } from 'lucide-react';
 
 interface NavItem {
@@ -30,7 +31,12 @@ const navItems: NavItem[] = [
   { name: 'Quản trị & Nhật ký', href: '/users', icon: Shield },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -39,22 +45,34 @@ export default function Sidebar() {
     router.push('/login');
   };
 
-  return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none">
+  const navContent = (
+    <div className="flex flex-col h-full bg-slate-900 text-slate-300 select-none">
       {/* Brand Header */}
-      <div className="h-16 bg-[#1E3A8A] flex items-center px-4 gap-3 border-b border-blue-900">
-        <div className="h-9 w-9 rounded-lg bg-blue-950 flex items-center justify-center shrink-0">
-          <Building className="h-5 w-5 text-blue-200" />
+      <div className="h-16 bg-[#1E3A8A] flex items-center justify-between px-4 border-b border-blue-900">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="h-9 w-9 rounded-lg bg-blue-950 flex items-center justify-center shrink-0 shadow-inner">
+            <Building className="h-5 w-5 text-blue-200" />
+          </div>
+          <div className="overflow-hidden">
+            <h2 className="text-xs font-bold text-white tracking-wider uppercase truncate">APARTMENT ERP</h2>
+            <p className="text-[10px] text-blue-200 truncate">Quản lý Nhà trọ & Căn hộ</p>
+          </div>
         </div>
-        <div className="overflow-hidden">
-          <h2 className="text-xs font-bold text-white tracking-wider uppercase truncate">APARTMENT ERP</h2>
-          <p className="text-[10px] text-blue-200 truncate">Quản lý Nhà trọ & Căn hộ</p>
-        </div>
+        {/* Mobile close button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 text-blue-200 hover:text-white rounded-lg hover:bg-blue-800 transition"
+            aria-label="Đóng menu"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-        <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+      <nav className="flex-1 overflow-y-auto p-2.5 space-y-1">
+        <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Phân Hệ Quản Lý
         </div>
         {navItems.map((item) => {
@@ -64,7 +82,8 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+              onClick={() => onClose && onClose()}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
                 isActive
                   ? 'bg-blue-600 text-white font-semibold shadow-sm'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -80,7 +99,7 @@ export default function Sidebar() {
       {/* Bottom User Strip */}
       <div className="p-3 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="h-7 w-7 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+          <div className="h-8 w-8 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
             A
           </div>
           <div className="overflow-hidden text-left">
@@ -100,7 +119,30 @@ export default function Sidebar() {
           <LogOut className="h-4 w-4" />
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar (Fixed) */}
+      <aside className="w-64 shrink-0 hidden md:flex md:flex-col border-r border-slate-800">
+        {navContent}
+      </aside>
+
+      {/* Mobile Drawer (Slide-out Overlay) */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={onClose}
+          />
+          {/* Drawer Content */}
+          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            {navContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
-

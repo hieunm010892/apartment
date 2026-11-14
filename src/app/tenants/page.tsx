@@ -156,11 +156,11 @@ export default function TenantsPage() {
   const renderCccdDigits = (cccd?: string) => {
     const digits = (cccd || '').replace(/\D/g, '').padEnd(12, ' ').slice(0, 12).split('');
     return (
-      <div className="flex gap-1 items-center">
+      <div className="flex gap-0.5 sm:gap-1 items-center overflow-x-auto max-w-full py-0.5">
         {digits.map((d, i) => (
           <div
             key={i}
-            className="w-5 h-6 border border-slate-700 flex items-center justify-center font-mono font-bold text-xs bg-white text-slate-900"
+            className="w-4 h-5 sm:w-5 sm:h-6 shrink-0 border border-slate-700 flex items-center justify-center font-mono font-bold text-[11px] sm:text-xs bg-white text-slate-900"
           >
             {d !== ' ' ? d : ''}
           </div>
@@ -170,33 +170,33 @@ export default function TenantsPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <AppLayout title="Quản lý Khách thuê & Khai báo Cư trú" subtitle="Quản lý hồ sơ nhân khẩu, CCCD và in Tờ khai CT01">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Users className="text-blue-600" size={26} />
-              Quản lý Khách thuê & Khai báo Cư trú (CT01)
+            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Users className="text-blue-600 shrink-0" size={24} />
+              <span>Khách thuê & Mẫu CT01</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Quản lý hồ sơ nhân khẩu, số CCCD, hợp đồng cư trú và in Tờ khai thay đổi thông tin cư trú Mẫu CT01 theo chuẩn Bộ Công An
+              Quản lý hồ sơ cư trú và in Mẫu CT01 theo quy chuẩn Bộ Công An
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportExcel}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-2 transition"
+              className="flex-1 sm:flex-none justify-center px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition"
             >
-              <Download size={15} />
-              Xuất Excel
+              <Download size={14} />
+              Excel
             </button>
             <button
               onClick={handleOpenAdd}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 shadow-sm transition"
+              className="flex-1 sm:flex-none justify-center px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5 shadow-sm transition"
             >
-              <UserPlus size={16} />
-              Thêm khách thuê
+              <UserPlus size={15} />
+              Thêm mới
             </button>
           </div>
         </div>
@@ -305,30 +305,31 @@ export default function TenantsPage() {
 
         {/* Modal In Mẫu CT01 */}
         {showCt01Modal && selectedTenant && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
               {/* Modal Header */}
-              <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between no-print">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-600 rounded-lg">
-                    <FileText size={20} className="text-white" />
+              <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between no-print">
+                <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                  <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg shrink-0">
+                    <FileText size={18} className="text-white" />
                   </div>
-                  <div>
-                    <h3 className="font-bold text-base">MẪU CT01: TỜ KHAI THAY ĐỔI THÔNG TIN CƯ TRÚ</h3>
-                    <p className="text-xs text-slate-300">Khách thuê: {selectedTenant.full_name} - Phòng: {selectedTenant.room_code || 'P.101'}</p>
+                  <div className="overflow-hidden">
+                    <h3 className="font-bold text-xs sm:text-base truncate">MẪU CT01: TỜ KHAI CƯ TRÚ</h3>
+                    <p className="text-[11px] text-slate-300 truncate">{selectedTenant.full_name} - {selectedTenant.room_code || 'P.101'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => window.print()}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow"
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow"
                   >
-                    <Printer size={15} />
-                    In Tờ Khai (A4)
+                    <Printer size={14} />
+                    <span className="hidden sm:inline">In Tờ Khai (A4)</span>
+                    <span className="sm:hidden">In</span>
                   </button>
                   <button
                     onClick={() => setShowCt01Modal(false)}
-                    className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                    className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
                   >
                     <X size={18} />
                   </button>
@@ -336,7 +337,7 @@ export default function TenantsPage() {
               </div>
 
               {/* CT01 Printable Document Content */}
-              <div className="p-8 overflow-y-auto print:p-0 print:overflow-visible text-slate-900 bg-white" id="printable-ct01">
+              <div className="p-4 sm:p-8 overflow-y-auto print:p-0 print:overflow-visible text-slate-900 bg-white" id="printable-ct01">
                 {/* Header Tiêu Ngữ */}
                 <div className="grid grid-cols-2 text-center mb-6">
                   <div>

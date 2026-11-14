@@ -85,26 +85,26 @@ export default function AssetsPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <AppLayout title="Quản lý Tài sản Thiết bị" subtitle="Kiểm kê trang thiết bị, máy lạnh, tủ lạnh và hạn bảo hành theo phòng">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Package className="text-blue-600" size={26} />
-              Quản lý Tài sản & Thiết bị Gắn liền theo Phòng
+            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Package className="text-blue-600 shrink-0" size={24} />
+              <span>Tài sản & Thiết bị</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Kiểm kê máy lạnh, tủ lạnh, máy nước nóng, khóa vân tay và thời hạn bảo hành cho từng phòng trọ
+              Kiểm kê máy lạnh, tủ lạnh, khóa vân tay và hạn bảo hành
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportExcel}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-2 transition"
+              className="flex-1 sm:flex-none justify-center px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition"
             >
-              <Download size={15} />
-              Xuất Excel
+              <Download size={14} />
+              Excel
             </button>
             <button
               onClick={() => {
@@ -118,10 +118,10 @@ export default function AssetsPage() {
                 });
                 setShowModal(true);
               }}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 shadow-sm transition"
+              className="flex-1 sm:flex-none justify-center px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5 shadow-sm transition"
             >
-              <Plus size={16} />
-              Ghi tăng thiết bị
+              <Plus size={15} />
+              Thêm thiết bị
             </button>
           </div>
         </div>
